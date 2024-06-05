@@ -7,7 +7,7 @@ from random import randint, shuffle, choice
 
 class Player:
     def __init__(self) -> None:
-        self.pos = pygame.Vector2(10, 10)
+        self.pos = pygame.Vector2(10, 9)
         self.body_sprites = pygame.image.load("./assets/character/walkcycle/BODY_skeleton.png")
         self.direction = 2
         self.stage = 0
