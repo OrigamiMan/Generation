@@ -19,7 +19,7 @@ map_generator = map.generate_map()
 
 game_surface = pygame.Surface(map.map_img.get_size())
 
-delay = 0
+
 minimap = None
 
 def bar(done, total) -> None:
@@ -49,20 +49,13 @@ while True:
             map.draw_map()
     else:       
         game_surface.blit(map.map_img, (0, 0))
-        if delay == 10:
-            if player.stage < 8:
-                player.stage += 1
-            else:
-                player.stage = 1
-            delay = 0
-            #print(player.stage)
         player.draw(game_surface, map.offset_tiles) 
         player.update_pos()
         if minimap == None:
             minimap = map.get_minimap(map.map)
         window.blit(game_surface, map.offset_px)
         window.blit(minimap, (0, 0))
-        delay += 1
+
             
     pygame.display.update()
-    clock.tick(60)      
+    clock.tick(100)      
