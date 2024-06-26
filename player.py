@@ -90,7 +90,7 @@ class Player:
         
     def update_pos(self):
         if self.animation_counter != 0:
-            self.direction = 2
+            #self.direction = 2
             return
         if len(self.route) == 0:
             return
@@ -105,7 +105,7 @@ class Player:
         angle = step.angle_to(target)
         self.pos = self.pos + step.rotate(angle)
         self.pos = pygame.Vector2(round(self.pos.x, 1), round(self.pos.y, 1))
-        self.direction = (3 - angle%360) //4
+        self.direction = 3 - (angle%360) //90
 
     def draw_line(self, surface: pygame.Surface , map_offset: pygame.Vector2):
             for p1, p2 in pairwise(self.route):
