@@ -1,5 +1,6 @@
 import pygame
-from typing import List, Sequence
+from typing import List, Sequence, Optional
+import constants
 
 def empty_slot() -> pygame.Surface:
     item_surface = pygame.Surface((64, 64))
@@ -22,52 +23,54 @@ class InventoryItem:
 class PlayerInv:
     def __init__(self) -> None:
         self.common_slots: List[List[InventoryItem | None]] = [[None]*9 for _ in range(3)]
-        self.hotbar: List[InventoryItem | None] = [None] * 9
-        self.clothes: List[InventoryItem | None] = [None] * 4
-        self.offhand: None
+        self.hotbar: List[List[InventoryItem | None]] = [[None] * 9]
+        self.clothes: List[List[InventoryItem | None]] = [[None] for _ in range(4)]
+        self.offhand: List[List[InventoryItem | None]] = [[None]]
         self.shown = False
         
-        self.moving_item = None
+        self.moving_item: Optional[InventoryItem] = None
+        
+        self.common_slots_rect: pygame.Rect = pygame.Rect(0, 0, 0, 0)
+        self.hotbar_rect: pygame.Rect = pygame.Rect(0, 0, 0, 0)
+        self.clothes_rect: pygame.Rect = pygame.Rect(0, 0, 0, 0)
+        self.offhand_rect: pygame.Rect = pygame.Rect(0, 0, 0, 0)
     
     def handle_event(self, event: pygame.event):
         if event.type == pygame.MOUSEBUTTONDOWN:
-            pass
+            if self.common_slots_rect.collidepoint(event.pos):
+                i = (event.pos.y - self.common_slots_rect.top) // 64
+                j = (event.pos.x - self.common_slots_rect.left) // 64
+                print(i, j)
         if event.type == pygame.MOUSEBUTTONUP:
             pass
         if event.type == pygame.MOUSEMOTION:
             pass
-        print(event)
+        
+    def render_slots(self, surface: pygame.Surface, slots: List[List[InventoryItem | None]], offset: pygame.Vector2) -> pygame.Rect:
+        for i in range(len(slots)):
+            for j in range(len(slots[i])):
+                item = slots[i][j]
+                item_surface = empty_slot()
+                if item is not None:
+                    item.display_icon(item_surface, (0, 0))
+                #return surface.blit(item_surface, (j * 64, i * 64) + offset)
+                surface.blit(item_surface, (j * 64, i * 64) + offset)
     
     def display(self, surface: pygame.Surface) -> None:
         if not self.shown:
             return
-        pygame.draw.rect(surface, (200, 200, 200), (0, 0, 800, 800))
         
-        for i in range(len(self.common_slots)):
-            for j in range(len(self.common_slots[i])):
-                item = self.common_slots[i][j]
-                item_surface = empty_slot()
-                if item is not None:
-                    item.display_icon(item_surface, (0, 0))
-                surface.blit(item_surface, (j * 64, i * 64) + pygame.Vector2(96, 384))
-                
+        inv_surface = pygame.Surface((constants.WINDOW_WIDTH, constants.WINDOW_HEIGHT), pygame.SRCALPHA, 32)
+        pygame.draw.rect(inv_surface, (200, 200, 200), (0, 0, 800, 800))
+
+        # self.common_slots_rect = self.render_slots(inv_surface, self.common_slots, pygame.Vector2(96, 384))
+        # self.clothes_rect = self.render_slots(inv_surface, self.clothes, pygame.Vector2(96, 96))
+        # self.hotbar_rect = self.render_slots(inv_surface, self.hotbar, pygame.Vector2(96, 594))
+        # self.offhand_rect = self.render_slots(inv_surface, self.offhand, pygame.Vector2(288, 288))
+        self.render_slots(inv_surface, self.common_slots, pygame.Vector2(96, 384))
+        self.render_slots(inv_surface, self.clothes, pygame.Vector2(96, 96))
+        self.render_slots(inv_surface, self.hotbar, pygame.Vector2(96, 594))
+        self.render_slots(inv_surface, self.offhand, pygame.Vector2(288, 288))
+
         
-        for i in range(len(self.clothes)):
-            item = self.clothes[i]
-            item_surface = empty_slot()
-            if item is not None:
-                item.display_icon(item_surface, (0, 0))
-            surface.blit(item_surface, (0, i * 64) + pygame.Vector2(96, 96))
-            
-        for i in range(len(self.hotbar)):
-            item = self.hotbar[i]
-            item_surface = empty_slot()
-            if item is not None:
-                item.display_icon(item_surface, (0, 0))
-            surface.blit(item_surface, (i * 64, 0) + pygame.Vector2(96, 594))
-            
-        item = self.offhand
-        item_surface = empty_slot()
-        if item is not None:
-            item.display_icon(item_surface, (0, 0))
-        surface.blit(item_surface, (64, 0) + pygame.Vector2(224, 288))
+        surface.blit(inv_surface, (0, 0))
