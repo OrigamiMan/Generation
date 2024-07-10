@@ -17,7 +17,7 @@ class InventoryItem:
 
     
     def display_icon(self, surface: pygame.Surface, coords: Sequence[float]):
-        surface.blit(self.icon, (0, 0))
+        surface.blit(self.icon, coords)
         
         
 class PlayerInv:
@@ -29,6 +29,8 @@ class PlayerInv:
         self.shown = False
         
         self.moving_item: Optional[InventoryItem] = None
+        self.moving_item_id = Optional[tuple[int, int]]
+        self.mouse_pos: Optional[pygame.Vector2] = None
         
         self.common_slots_rect: pygame.Rect = pygame.Rect(0, 0, 0, 0)
         self.hotbar_rect: pygame.Rect = pygame.Rect(0, 0, 0, 0)
@@ -38,23 +40,45 @@ class PlayerInv:
     def handle_event(self, event: pygame.event):
         if event.type == pygame.MOUSEBUTTONDOWN:
             if self.common_slots_rect.collidepoint(event.pos):
-                i = (event.pos.y - self.common_slots_rect.top) // 64
-                j = (event.pos.x - self.common_slots_rect.left) // 64
-                print(i, j)
+                i = (event.pos[1] - self.common_slots_rect.top) // 64
+                j = (event.pos[0] - self.common_slots_rect.left) // 64
+                self.common_slots[i][j], self.moving_item = self.moving_item, self.common_slots[i][j]
+            self.mouse_pos = None
+                
+
+        if event.type == pygame.MOUSEMOTION and self.moving_item:
+            self.mouse_pos = event.pos
+        
+    def handle_event_drag_drop(self, event: pygame.event):
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if self.common_slots_rect.collidepoint(event.pos):
+                i = (event.pos[1] - self.common_slots_rect.top) // 64
+                j = (event.pos[0] - self.common_slots_rect.left) // 64
+                self.moving_item_id = i, j
+        
         if event.type == pygame.MOUSEBUTTONUP:
-            pass
-        if event.type == pygame.MOUSEMOTION:
-            pass
+            if self.moving_item_id is None or self.mouse_pos is not None:
+                mi, mj = self.moving_item_id
+                if self.common_slots_rect.collidepoint(event.pos):
+                    i = (event.pos[1] - self.common_slots_rect.top) // 64
+                    j = (event.pos[0] - self.common_slots_rect.left) // 64
+                    self.common_slots[i][j], self.common_slots[mi][mj] = self.common_slots[mi][mj], self.common_slots[i][j]
+            self.mouse_pos = None
+            self.moving_item = None
+
+        if event.type == pygame.MOUSEMOTION and self.moving_item is not None:
+            self.mouse_pos = event.pos
         
     def render_slots(self, surface: pygame.Surface, slots: List[List[InventoryItem | None]], offset: pygame.Vector2) -> pygame.Rect:
+        s = pygame.Surface((len(slots[0])*64, len(slots)*64))
         for i in range(len(slots)):
             for j in range(len(slots[i])):
                 item = slots[i][j]
                 item_surface = empty_slot()
                 if item is not None:
                     item.display_icon(item_surface, (0, 0))
-                #return surface.blit(item_surface, (j * 64, i * 64) + offset)
-                surface.blit(item_surface, (j * 64, i * 64) + offset)
+                s.blit(item_surface, (j * 64, i * 64))
+        return surface.blit(s, offset)
     
     def display(self, surface: pygame.Surface) -> None:
         if not self.shown:
@@ -63,14 +87,21 @@ class PlayerInv:
         inv_surface = pygame.Surface((constants.WINDOW_WIDTH, constants.WINDOW_HEIGHT), pygame.SRCALPHA, 32)
         pygame.draw.rect(inv_surface, (200, 200, 200), (0, 0, 800, 800))
 
-        # self.common_slots_rect = self.render_slots(inv_surface, self.common_slots, pygame.Vector2(96, 384))
-        # self.clothes_rect = self.render_slots(inv_surface, self.clothes, pygame.Vector2(96, 96))
-        # self.hotbar_rect = self.render_slots(inv_surface, self.hotbar, pygame.Vector2(96, 594))
-        # self.offhand_rect = self.render_slots(inv_surface, self.offhand, pygame.Vector2(288, 288))
-        self.render_slots(inv_surface, self.common_slots, pygame.Vector2(96, 384))
-        self.render_slots(inv_surface, self.clothes, pygame.Vector2(96, 96))
-        self.render_slots(inv_surface, self.hotbar, pygame.Vector2(96, 594))
-        self.render_slots(inv_surface, self.offhand, pygame.Vector2(288, 288))
+        self.common_slots_rect = self.render_slots(inv_surface, self.common_slots, pygame.Vector2(96, 384))
+        self.clothes_rect = self.render_slots(inv_surface, self.clothes, pygame.Vector2(96, 96))
+        self.hotbar_rect = self.render_slots(inv_surface, self.hotbar, pygame.Vector2(96, 594))
+        self.offhand_rect = self.render_slots(inv_surface, self.offhand, pygame.Vector2(288, 288))
+        
+        if self.moving_item is not None and self.mouse_pos is not None:
+            self.moving_item.display_icon(inv_surface, self.mouse_pos - pygame.Vector2(32, 32))
+        
+        if self.moving_item_id is not None and self.mouse_pos is not None:
+            icon_surface = pygame.Surface((64, 64))
+            mi, mj = self.moving_item_id
+            moving_item_id = self.common_slots[mi][mj]
+            moving_item_id.display(icon_surface, (0, 0))
+            icon_surface.set_colorkey((0, 0, 0))
+            inv_surface.blit(icon_surface, pygame.Vector2(self.mouse_pos) - pygame.Vector2(32, 32))
 
         
         surface.blit(inv_surface, (0, 0))

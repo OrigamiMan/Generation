@@ -29,15 +29,17 @@ def bar(done, total) -> None:
     
     
 robe_hood = InventoryItem("assets\character\walkcycle\HEAD_robe_hood.png")
+robe_hood2 = InventoryItem("assets\character\walkcycle\HEAD_robe_hood.png")
 inventory = PlayerInv()
 inventory.common_slots[2][2] = robe_hood
+inventory.common_slots[2][4] = robe_hood2
     
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             exit()
         if inventory.shown:
-            inventory.handle_event(event)
+            inventory.handle_event_drag_drop(event)
         if event.type == pygame.MOUSEBUTTONDOWN and map.is_loaded and not inventory.shown:
             if event.button == pygame.BUTTON_LEFT:
                 map_col = round((-map.offset_px.x + event.pos[0])//32 + map.offset_tiles.x)
